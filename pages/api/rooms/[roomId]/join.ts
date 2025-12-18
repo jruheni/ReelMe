@@ -41,11 +41,6 @@ export default async function handler(
 
     const room = roomSnap.data() as Room;
 
-    // Check if room is full (max 5 participants)
-    if (room.participants.length >= 5) {
-      return res.status(400).json({ error: 'Room is full (max 5 participants)' });
-    }
-
     // Check if participant already exists (by ID)
     const existingParticipant = room.participants.find(
       (p) => p.id === participant.id
@@ -56,6 +51,20 @@ export default async function handler(
         success: true,
         message: 'Participant already in room',
         room,
+      });
+    }
+
+    // Enforce unique nickname within the room
+    const nicknameTaken = room.participants.some(
+      (p) =>
+        p.nickname.trim().toLowerCase() ===
+        String(participant.nickname).trim().toLowerCase()
+    );
+
+    if (nicknameTaken) {
+      return res.status(400).json({
+        error:
+          'That nickname is already in use in this room. Please choose another one.',
       });
     }
 

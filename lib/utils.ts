@@ -67,7 +67,7 @@ export function compileWatchlist(room: Room): Movie[] {
 }
 
 /**
- * Rank movies based on genre match, rating, and recency
+ * Rank movies based on critic score (rating), recency, and genre match
  * 
  * @param movies - Array of movies to rank
  * @param selectedGenres - Array of selected genre IDs
@@ -75,23 +75,22 @@ export function compileWatchlist(room: Room): Movie[] {
  */
 export function rankMovies(movies: Movie[], selectedGenres: number[]): Movie[] {
   return [...movies].sort((a, b) => {
-    // 1. Genre match score (higher is better)
-    const aGenreMatch = a.genre_ids?.filter((id) => selectedGenres.includes(id)).length || 0;
-    const bGenreMatch = b.genre_ids?.filter((id) => selectedGenres.includes(id)).length || 0;
-    
-    if (aGenreMatch !== bGenreMatch) {
-      return bGenreMatch - aGenreMatch; // More genre matches = higher rank
-    }
-    
-    // 2. TMDB rating (higher is better)
+    // 1. TMDB rating (critic score) - higher is better
     if (a.vote_average !== b.vote_average) {
       return b.vote_average - a.vote_average;
     }
     
-    // 3. Recency (newer movies first)
+    // 2. Recency (newer movies first)
     const aYear = new Date(a.release_date).getFullYear();
     const bYear = new Date(b.release_date).getFullYear();
-    return bYear - aYear;
+    if (aYear !== bYear) {
+      return bYear - aYear;
+    }
+
+    // 3. Genre match score (as a softer tiebreaker)
+    const aGenreMatch = a.genre_ids?.filter((id) => selectedGenres.includes(id)).length || 0;
+    const bGenreMatch = b.genre_ids?.filter((id) => selectedGenres.includes(id)).length || 0;
+    return bGenreMatch - aGenreMatch;
   });
 }
 

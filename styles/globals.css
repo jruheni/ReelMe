@@ -4,6 +4,14 @@
  * Tailwind CSS directives and custom styles for mobile-first design.
  */
 
+@font-face {
+  font-family: 'Tanker';
+  src: url('/fonts/Tanker-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,6 +23,10 @@
   margin: 0;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Tanker', sans-serif;
+}
+
 html,
 body {
   max-width: 100vw;
@@ -24,6 +36,14 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #000;
+  color: #e5e7eb;
+  scroll-behavior: smooth;
+}
+
+.light body {
+  background: #f3f4f6;
+  color: #111827;
 }
 
 /* Prevent text selection during swiping */
@@ -38,5 +58,250 @@ body {
 /* Smooth transitions */
 .transition-smooth {
   transition: all 0.3s ease;
+}
+
+/* ============================================
+   LANDING PAGE SCROLL ANIMATIONS
+   ============================================ */
+
+/* Landing Container */
+.landing-container {
+  background: #000;
+  color: #ddd;
+  line-height: 1.6;
+}
+
+/* Fullscreen Sections */
+.fullscreen-section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* Hero Section */
+.hero-section {
+  position: relative;
+  min-height: 100vh;
+  background: url("/images/hero.jpg") center / cover no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0),
+    rgba(0, 0, 0, 0.5),
+    rgba(0, 0, 0, 0.8)
+  );
+}
+
+.hero-section > * {
+  position: relative;
+  z-index: 1;
+}
+
+
+.hero-title {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 1rem;
+  line-height: 1.1;
+}
+
+.hero-subtitle {
+  display: block;
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  font-weight: 400;
+  opacity: 0.8;
+  margin-top: 0.5rem;
+}
+
+.scroll-hint {
+  margin-top: 2rem;
+  font-size: 1rem;
+  opacity: 0.6;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Story Section */
+.story-section {
+  padding: 8rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.story-grid {
+  display: grid;
+  gap: 6rem;
+}
+
+.story-item {
+  opacity: 0;
+  transform: translateY(4rem);
+  animation: text-appear ease-in both;
+  animation-timeline: view();
+  animation-range: 0vh 70vh;
+}
+
+.story-title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: #FFCC33;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.story-description {
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  line-height: 1.8;
+  color: #bbb;
+  max-width: 600px;
+}
+
+/* Poster Marquee Animation */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee-scroll 45s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
+
+/* Landing Section */
+.landing-section {
+  background: #000;
+  position: relative;
+}
+
+.landing-content {
+  max-width: 64rem;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+.landing-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.landing-title {
+  font-size: clamp(3rem, 8vw, 4rem);
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.landing-subtitle {
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  color: #93c5fd;
+}
+
+.landing-cards {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .landing-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.landing-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.landing-card-alt {
+  background: rgba(23, 23, 23, 0.8);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(64, 64, 64, 1);
+}
+
+.landing-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 2rem;
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #93c5fd;
+}
+
+/* Scroll Animations */
+@keyframes text-appear {
+  from {
+    opacity: 0;
+    transform: translateY(4rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade-in content for hero */
+.fade-in-content {
+  animation: fade-in 1.5s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .story-item,
+  .fade-in-content,
+  .scroll-hint {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Support for browsers without view() timeline */
+@supports not (animation-timeline: view()) {
+  .story-item {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 

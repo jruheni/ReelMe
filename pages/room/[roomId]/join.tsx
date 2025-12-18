@@ -96,7 +96,7 @@ export default function JoinRoom() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white text-xl">Loading room...</div>
       </div>
     );
@@ -104,7 +104,7 @@ export default function JoinRoom() {
 
   if (error && !room) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 text-center">
           <p className="text-red-300 mb-4">{error}</p>
           <button
@@ -119,7 +119,7 @@ export default function JoinRoom() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-xl">
           <h1 className="text-2xl font-bold text-white mb-2">Join Room</h1>
@@ -128,11 +128,8 @@ export default function JoinRoom() {
           {room && (
             <div className="mb-6">
               <p className="text-white text-sm mb-2">
-                Participants: {room.participants.length}/5
+                Participants: {room.participants.length}
               </p>
-              {room.participants.length >= 5 && (
-                <p className="text-red-300 text-sm">Room is full!</p>
-              )}
             </div>
           )}
 
@@ -155,7 +152,7 @@ export default function JoinRoom() {
             />
             <button
               type="submit"
-              disabled={isJoining || (room?.participants.length || 0) >= 5}
+              disabled={isJoining}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isJoining ? 'Joining...' : 'Join Room'}

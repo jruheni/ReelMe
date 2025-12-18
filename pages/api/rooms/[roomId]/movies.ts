@@ -42,10 +42,10 @@ export default async function handler(
       return res.status(404).json({ error: 'Room not found' });
     }
 
-    // Fetch movies from TMDB
-    const movies = await fetchMultiplePages(genreIds, 3); // Fetch 3 pages (~60 movies)
+    // Fetch movies from TMDB (more pages = larger pool to choose from)
+    const movies = await fetchMultiplePages(genreIds, 5); // Fetch 5 pages (~100 movies)
 
-    // Rank movies based on genre match, rating, and recency
+    // Rank movies based on critic score, recency, and genre match
     const rankedMovies = rankMovies(movies, genreIds);
 
     // Update room with movie list

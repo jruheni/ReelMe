@@ -21,6 +21,38 @@ export default function SwipePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isVoting, setIsVoting] = useState(false);
 
+  // Auto-leave room when tab closes
+  useEffect(() => {
+    if (!roomId || typeof roomId !== 'string') return;
+
+    const participantIdStr =
+      typeof participantId === 'string'
+        ? participantId
+        : Array.isArray(participantId)
+        ? participantId[0]
+        : '';
+
+    if (!participantIdStr) return;
+
+    const handleBeforeUnload = async () => {
+      try {
+        await fetch(`/api/rooms/${roomId}/leave`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ participantId: participantIdStr }),
+          keepalive: true,
+        });
+      } catch (e) {
+        console.error('Error leaving room on unload', e);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [roomId, participantId]);
+
   // Fetch room data
   useEffect(() => {
     if (!roomId || typeof roomId !== 'string') return;
@@ -104,7 +136,7 @@ export default function SwipePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white text-xl">Loading movies...</div>
       </div>
     );
@@ -112,7 +144,7 @@ export default function SwipePage() {
 
   if (!room || room.movieList.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 text-center">
           <p className="text-white mb-4">No movies available yet.</p>
           <p className="text-blue-200 text-sm mb-4">
@@ -135,7 +167,7 @@ export default function SwipePage() {
   const participant = room.participants.find((p) => p.id === participantId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4 pb-24">
+    <div className="min-h-screen bg-black p-4 pb-24">
       {/* Header */}
       <div className="max-w-md mx-auto mb-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 mb-4">
@@ -163,7 +195,7 @@ export default function SwipePage() {
       </div>
 
       {/* Movie Cards Stack */}
-      <div className="relative max-w-sm mx-auto" style={{ height: '600px' }}>
+      <div className="relative max-w-md mx-auto h-[70vh] max-h-[700px] flex items-center">
         <AnimatePresence>
           {/* Next card (peeking behind) */}
           {nextMovie && (
@@ -172,8 +204,8 @@ export default function SwipePage() {
               className="absolute inset-0 flex items-center justify-center"
               style={{ zIndex: 1 }}
             >
-              <div className="w-full max-w-sm mx-auto">
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden opacity-50 scale-95">
+              <div className="w-full max-w-md mx-auto">
+                <div className="bg-white rounded-3xl shadow-2xl overflow-hidden opacity-50 scale-95">
                   <div className="aspect-[2/3] bg-gray-200">
                     <img
                       src={getPosterUrl(nextMovie.poster_path, 'w500')}
@@ -216,8 +248,8 @@ export default function SwipePage() {
         )}
       </div>
 
-      {/* Manual buttons (fallback for non-swipe devices) */}
-      <div className="max-w-sm mx-auto mt-4 flex gap-4">
+      {/* Manual buttons (fallback for non-swipe devices) - hidden on mobile */}
+      <div className="hidden md:flex max-w-sm mx-auto mt-4 gap-4">
         <button
           onClick={() => handleSwipe('discarded')}
           disabled={isVoting || !currentMovie}
