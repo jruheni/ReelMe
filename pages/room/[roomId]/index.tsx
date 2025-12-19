@@ -150,7 +150,8 @@ export default function RoomLandingPage() {
 
   const moviesReady = room.movieList && room.movieList.length > 0;
 
-  const canStartSwiping = allJoined && allHaveGenres && moviesReady;
+  // Allow swiping as soon as movies are ready – no need to wait for everyone
+  const canStartSwiping = moviesReady;
 
   const currentParticipant = room.participants.find(
     (p) => p.id === participantIdStr
@@ -185,29 +186,7 @@ export default function RoomLandingPage() {
             <p className="text-blue-200 text-sm">
               Participants: {currentCount}/{expectedCount}
             </p>
-            {!allJoined && (
-              <p className="text-yellow-300 text-xs">
-                Waiting for everyone to join...
-              </p>
-            )}
           </div>
-
-          <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-            <div
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{
-                width: `${Math.min(
-                  100,
-                  (currentCount / expectedCount) * 100
-                )}%`,
-              }}
-            />
-          </div>
-
-          <p className="text-blue-200 text-xs mb-4">
-            Everyone also needs to select their genres before swiping can
-            begin.
-          </p>
 
           {/* Actions */}
           <div className="flex flex-wrap gap-3">

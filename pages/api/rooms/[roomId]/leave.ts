@@ -1,17 +1,16 @@
 /**
  * API Route: Leave Room
- *
+ * 
  * POST /api/rooms/[roomId]/leave
- *
- * Removes a participant from a room, along with their votes,
- * and recalculates the watchlist.
+ * 
+ * Removes a participant from a room and cleans up their votes.
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Room } from '@/types';
 import { compileWatchlist } from '@/lib/utils';
+import { Room } from '@/types';
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,8 +27,8 @@ export default async function handler(
     return res.status(400).json({ error: 'Room ID is required' });
   }
 
-  if (!participantId || typeof participantId !== 'string') {
-    return res.status(400).json({ error: 'participantId is required' });
+  if (!participantId) {
+    return res.status(400).json({ error: 'Participant ID is required' });
   }
 
   try {
@@ -47,36 +46,36 @@ export default async function handler(
       (p) => p.id !== participantId
     );
 
-    // Remove participant's votes if present
-    if (room.votes && room.votes[participantId]) {
-      delete room.votes[participantId];
-    }
+    // Remove participant's votes
+    const updatedVotes = { ...room.votes };
+    delete updatedVotes[participantId];
 
-    // Recalculate watchlist based on remaining votes
-    const updatedRoomForWatchlist: Room = {
+    // Recompile watchlist without this participant's votes
+    const updatedRoom = {
       ...room,
       participants: updatedParticipants,
+      votes: updatedVotes,
     };
+    const watchlist = compileWatchlist(updatedRoom);
 
-    const updatedWatchlist = compileWatchlist(updatedRoomForWatchlist);
-
+    // Update room
     await updateDoc(roomRef, {
       participants: updatedParticipants,
-      votes: room.votes,
-      watchlist: updatedWatchlist,
+      votes: updatedVotes,
+      watchlist: watchlist,
     });
 
-    const updatedSnap = await getDoc(roomRef);
-    const updatedRoom = updatedSnap.data() as Room;
+    // Get final room state
+    const finalSnap = await getDoc(roomRef);
+    const finalRoom = finalSnap.data() as Room;
 
     return res.status(200).json({
       success: true,
-      room: updatedRoom,
+      room: finalRoom,
     });
   } catch (error) {
     console.error('Error leaving room:', error);
     return res.status(500).json({ error: 'Failed to leave room' });
   }
 }
-
 

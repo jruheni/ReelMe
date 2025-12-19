@@ -3,15 +3,15 @@
  * 
  * POST /api/rooms/[roomId]/generate-recommendations
  * 
- * Generates movie recommendations based on all participants' preferences
- * and updates the room's movie list
+ * Generates movie recommendations based on all participants' preferences.
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Room, UserPreferences } from '@/types';
-import { generateGroupRecommendations } from '@/lib/recommendations';
+import { discoverMovies } from '@/lib/tmdb';
+import { rankMovies } from '@/lib/utils';
+import { Room } from '@/types';
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,7 +28,6 @@ export default async function handler(
   }
 
   try {
-    // Fetch room
     const roomRef = doc(db, 'rooms', roomId);
     const roomSnap = await getDoc(roomRef);
 
@@ -38,49 +37,70 @@ export default async function handler(
 
     const room = roomSnap.data() as Room;
 
-    // Check if all participants have completed preferences
-    const allCompleted = room.participants.every((p) => p.hasCompletedPreferences);
-    
-    if (!allCompleted) {
-      return res.status(400).json({ 
-        error: 'Not all participants have completed their preferences',
-        participantsReady: room.participants.filter((p) => p.hasCompletedPreferences).length,
-        totalParticipants: room.participants.length,
+    // Collect all genres from all participants
+    const allGenres = new Set<number>();
+    room.participants.forEach((p) => {
+      if (p.genres && p.genres.length > 0) {
+        p.genres.forEach((g) => allGenres.add(g));
+      }
+    });
+
+    // Also check userPreferences for genres
+    if (room.userPreferences) {
+      Object.values(room.userPreferences).forEach((prefs) => {
+        if (prefs.selectedGenres) {
+          prefs.selectedGenres.forEach((g) => allGenres.add(g));
+        }
       });
     }
 
-    // Get all user preferences
-    const userPreferences = room.userPreferences || {};
-    const allUserPreferences: UserPreferences[] = Object.values(userPreferences);
+    const genreIds = Array.from(allGenres);
 
-    if (allUserPreferences.length === 0) {
-      return res.status(400).json({ error: 'No user preferences found' });
+    if (genreIds.length === 0) {
+      return res.status(400).json({ error: 'No genres selected by participants' });
     }
 
-    // Generate group recommendations
-    const { movies, scores } = await generateGroupRecommendations(allUserPreferences);
+    // Fetch movies from TMDB (fetch multiple pages for larger pool)
+    const allMovies = [];
+    for (let page = 1; page <= 5; page++) {
+      const movies = await discoverMovies({
+        genreIds,
+        minVoteCount: 500,
+        minVoteAverage: 7.0,
+        page,
+      });
+      allMovies.push(...movies);
+      if (movies.length < 20) break; // Stop if we got less than a full page
+    }
 
-    // Update room with recommendations
+    // Remove duplicates
+    const uniqueMovies = Array.from(
+      new Map(allMovies.map((movie) => [movie.id, movie])).values()
+    );
+
+    // Rank movies
+    const rankedMovies = rankMovies(uniqueMovies, genreIds);
+
+    // Update room with movie list
     await updateDoc(roomRef, {
-      movieList: movies,
-      recommendationScores: scores,
+      movieList: rankedMovies,
       preferences: {
-        genres: Array.from(
-          new Set(allUserPreferences.flatMap((p) => p.selectedGenres))
-        ),
+        genres: genreIds,
       },
     });
 
+    // Get updated room
+    const updatedSnap = await getDoc(roomRef);
+    const updatedRoom = updatedSnap.data() as Room;
+
     return res.status(200).json({
       success: true,
-      movieCount: movies.length,
-      message: 'Recommendations generated successfully',
+      movieCount: rankedMovies.length,
+      room: updatedRoom,
     });
   } catch (error) {
     console.error('Error generating recommendations:', error);
-    return res.status(500).json({ 
-      error: 'Failed to generate recommendations',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    return res.status(500).json({ error: 'Failed to generate recommendations' });
   }
 }
+

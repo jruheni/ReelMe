@@ -81,13 +81,23 @@ export default function Preferences() {
     setIsSearching(true);
     try {
       const response = await fetch(`/api/search-movies?query=${encodeURIComponent(query)}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
-      if (data.success) {
-        setSearchResults(data.movies.slice(0, 10)); // Limit to 10 results
+      // Ensure we have a valid response with results array
+      if (data && data.success && Array.isArray(data.results)) {
+        setSearchResults(data.results);
+      } else {
+        console.warn('Invalid API response:', data);
+        setSearchResults([]);
       }
     } catch (error) {
       console.error('Error searching movies:', error);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }

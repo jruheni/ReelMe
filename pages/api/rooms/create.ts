@@ -4,8 +4,6 @@
  * POST /api/rooms/create
  * 
  * Creates a new room with a unique room code.
- * Initializes empty participants, movieList, votes, and watchlist.
- * Optionally accepts expectedParticipants (number of users expected in the room).
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -23,7 +21,7 @@ export default async function handler(
   }
 
   try {
-    const { expectedParticipants } = req.body || {};
+    const { expectedParticipants } = req.body;
 
     // Generate unique room code
     let roomId = generateRoomCode();
@@ -49,9 +47,7 @@ export default async function handler(
       movieList: [],
       votes: {},
       watchlist: [],
-      expectedParticipants: typeof expectedParticipants === 'number'
-        ? Math.min(Math.max(expectedParticipants, 1), 10) // clamp between 1 and 10
-        : undefined,
+      expectedParticipants: expectedParticipants || undefined,
     };
 
     // Save to Firestore

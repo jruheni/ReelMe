@@ -1,16 +1,13 @@
 /**
- * API Route: Search Movies by Title
- *
+ * API Route: Search Movies
+ * 
  * GET /api/search-movies?query=...
- *
- * Returns a list of TMDB movies matching the given title query.
+ * 
+ * Searches for movies by title using TMDB API.
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import axios from 'axios';
-
-const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY || '';
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+import { searchMovies } from '@/lib/tmdb';
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,45 +17,47 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!TMDB_API_KEY) {
-    return res.status(500).json({ error: 'TMDB API key not configured' });
-  }
+  const { query } = req.query;
 
-  const query = String(req.query.query || '').trim();
-
-  if (!query) {
-    return res.status(400).json({ error: 'query parameter is required' });
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({ error: 'Query parameter is required' });
   }
 
   try {
-    const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
-      params: {
-        api_key: TMDB_API_KEY,
-        query,
-        include_adult: false,
-      },
-    });
-
-    const results = Array.isArray(response.data.results)
-      ? response.data.results.slice(0, 10)
-      : [];
+    const results = await searchMovies(query, 1);
+    
+    // Ensure results is an array - if not, return empty array
+    if (!results || !Array.isArray(results)) {
+      console.warn('searchMovies did not return an array:', results);
+      return res.status(200).json({
+        success: true,
+        results: [],
+      });
+    }
+    
+    // Limit to 10 results and map to simplified format
+    const limitedResults = results
+      .slice(0, 10)
+      .filter((movie) => movie && movie.id) // Filter out any invalid entries
+      .map((movie) => ({
+        id: movie.id,
+        title: movie.title || 'Unknown',
+        release_date: movie.release_date || '',
+        poster_path: movie.poster_path || null,
+        vote_average: movie.vote_average || 0,
+      }));
 
     return res.status(200).json({
       success: true,
-      movies: results.map((m: any) => ({
-        id: m.id,
-        title: m.title,
-        release_date: m.release_date,
-        poster_path: m.poster_path,
-        vote_average: m.vote_average,
-        genre_ids: m.genre_ids || [],
-        overview: m.overview,
-      })),
+      results: limitedResults,
     });
   } catch (error) {
-    console.error('Error searching movies on TMDB:', error);
-    return res.status(500).json({ error: 'Failed to search movies' });
+    console.error('Error searching movies:', error);
+    // Always return success with empty results on error
+    return res.status(200).json({
+      success: true,
+      results: [],
+    });
   }
 }
-
 

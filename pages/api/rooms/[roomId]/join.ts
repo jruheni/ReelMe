@@ -4,7 +4,6 @@
  * POST /api/rooms/[roomId]/join
  * 
  * Adds a participant to a room.
- * Validates room exists and has space (max 5 participants).
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -41,6 +40,17 @@ export default async function handler(
 
     const room = roomSnap.data() as Room;
 
+    // Check if nickname is already in use
+    const nicknameInUse = room.participants.some(
+      (p) => p.nickname.toLowerCase().trim() === participant.nickname.toLowerCase().trim()
+    );
+
+    if (nicknameInUse) {
+      return res.status(400).json({
+        error: 'That nickname is already in use in this room. Please choose another one.',
+      });
+    }
+
     // Check if participant already exists (by ID)
     const existingParticipant = room.participants.find(
       (p) => p.id === participant.id
@@ -51,20 +61,6 @@ export default async function handler(
         success: true,
         message: 'Participant already in room',
         room,
-      });
-    }
-
-    // Enforce unique nickname within the room
-    const nicknameTaken = room.participants.some(
-      (p) =>
-        p.nickname.trim().toLowerCase() ===
-        String(participant.nickname).trim().toLowerCase()
-    );
-
-    if (nicknameTaken) {
-      return res.status(400).json({
-        error:
-          'That nickname is already in use in this room. Please choose another one.',
       });
     }
 

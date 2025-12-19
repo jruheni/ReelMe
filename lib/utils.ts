@@ -84,7 +84,7 @@ export function rankMovies(movies: Movie[], selectedGenres: number[]): Movie[] {
     const aYear = new Date(a.release_date).getFullYear();
     const bYear = new Date(b.release_date).getFullYear();
     if (aYear !== bYear) {
-      return bYear - aYear;
+    return bYear - aYear;
     }
 
     // 3. Genre match score (as a softer tiebreaker)

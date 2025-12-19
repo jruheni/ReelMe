@@ -229,7 +229,6 @@ export const getStaticProps: GetStaticProps = async () => {
       props: {
         posters,
       },
-      revalidate: 86400, // Revalidate once per day
     };
   } catch (error) {
     console.error('Error fetching posters:', error);

@@ -20,6 +20,7 @@ export default function SwipePage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isVoting, setIsVoting] = useState(false);
+  const [orderedMovies, setOrderedMovies] = useState<Movie[]>([]);
 
   // Auto-leave room when tab closes
   useEffect(() => {
@@ -57,23 +58,54 @@ export default function SwipePage() {
   useEffect(() => {
     if (!roomId || typeof roomId !== 'string') return;
 
+    const participantIdStr =
+      typeof participantId === 'string'
+        ? participantId
+        : Array.isArray(participantId)
+        ? participantId[0]
+        : '';
+
     const fetchRoom = async () => {
       try {
         const response = await fetch(`/api/rooms/${roomId}`);
         const data = await response.json();
 
         if (data.success) {
-          setRoom(data.room);
-          
-          // Find current position in movie list (skip already voted movies)
-          if (data.room.votes && data.room.votes[participantId as string]) {
+          const loadedRoom: Room = data.room;
+          setRoom(loadedRoom);
+
+          // Build ordered movie list for this user:
+          // 1) watchlist movies first
+          // 2) then the rest
+          const watchlistIds = new Set(
+            (loadedRoom.watchlist || []).map((m: Movie) => m.id)
+          );
+
+          const watchlistFirst = loadedRoom.movieList.filter((m: Movie) =>
+            watchlistIds.has(m.id)
+          );
+          const others = loadedRoom.movieList.filter(
+            (m: Movie) => !watchlistIds.has(m.id)
+          );
+
+          const ordered = [...watchlistFirst, ...others].filter(
+            (movie, idx, arr) =>
+              arr.findIndex((x) => x.id === movie.id) === idx
+          );
+
+          setOrderedMovies(ordered);
+
+          // Find current position (skip already voted movies by this participant)
+          if (loadedRoom.votes && participantIdStr) {
             const votedMovieIds = Object.keys(
-              data.room.votes[participantId as string]
+              loadedRoom.votes[participantIdStr] || {}
             ).map(Number);
-            const firstUnvotedIndex = data.room.movieList.findIndex(
+            const firstUnvotedIndex = ordered.findIndex(
               (m: Movie) => !votedMovieIds.includes(m.id)
             );
             setCurrentIndex(firstUnvotedIndex >= 0 ? firstUnvotedIndex : 0);
+          } else {
+            setCurrentIndex(0);
           }
         }
       } catch (error) {
@@ -93,7 +125,7 @@ export default function SwipePage() {
   const handleSwipe = async (vote: VoteType) => {
     if (!room || !participantId || typeof participantId !== 'string') return;
 
-    const currentMovie = room.movieList[currentIndex];
+    const currentMovie = orderedMovies[currentIndex];
     if (!currentMovie) return;
 
     setIsVoting(true);
@@ -117,11 +149,11 @@ export default function SwipePage() {
         setRoom(data.room);
         
         // Move to next movie
-        if (currentIndex < room.movieList.length - 1) {
-          setCurrentIndex(currentIndex + 1);
+        const nextIndex = currentIndex + 1;
+        if (nextIndex < orderedMovies.length) {
+          setCurrentIndex(nextIndex);
         } else {
-          // Finished all movies
-          alert('You\'ve finished swiping through all movies!');
+          alert("You've finished swiping through all movies!");
         }
       } else {
         alert('Failed to save vote. Please try again.');
@@ -142,7 +174,7 @@ export default function SwipePage() {
     );
   }
 
-  if (!room || room.movieList.length === 0) {
+  if (!room || orderedMovies.length === 0) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 text-center">
@@ -161,9 +193,9 @@ export default function SwipePage() {
     );
   }
 
-  const currentMovie = room.movieList[currentIndex];
-  const nextMovie = room.movieList[currentIndex + 1];
-  const progress = ((currentIndex + 1) / room.movieList.length) * 100;
+  const currentMovie = orderedMovies[currentIndex];
+  const nextMovie = orderedMovies[currentIndex + 1];
+  const progress = ((currentIndex + 1) / orderedMovies.length) * 100;
   const participant = room.participants.find((p) => p.id === participantId);
 
   return (
