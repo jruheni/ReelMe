@@ -4,6 +4,8 @@
 /node_modules
 /.pnp
 .pnp.js
+.firebase/**/node_modules
+.firebase/**/package-lock.json
 
 # testing
 /coverage
